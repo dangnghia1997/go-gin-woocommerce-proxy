@@ -1,0 +1,18 @@
+---
+services:
+  proxy:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - WOOCOMMERCE_API_URL=${WOOCOMMERCE_API_URL}
+      - WOOCOMMERCE_CONSUMER_KEY=${WOOCOMMERCE_CONSUMER_KEY}
+      - WOOCOMMERCE_CONSUMER_SECRET=${WOOCOMMERCE_CONSUMER_SECRET}
+      - REDIS_ADDR=redis:6379
+    depends_on:
+      - redis
+
+  redis:
+    image: "redis:alpine"
+    ports:
+      - "6379:6379"

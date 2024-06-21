@@ -3,10 +3,12 @@ package main
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -21,6 +23,11 @@ var (
 	ctx               = context.Background()
 	rdb               *redis.Client
 )
+
+type CachedResponse struct {
+	Headers map[string]string `json:"headers"`
+	Body    string            `json:"body"`
+}
 
 func main() {
 
@@ -76,8 +83,25 @@ func main() {
 				return
 			}
 
+			// Prepare headers to cache
+			headers := make(map[string]string)
+			for k, v := range resp.Header {
+				headers[k] = strings.Join(v, ",")
+			}
+
+			// Serialize headers and body
+			cachedResp := CachedResponse{
+				Headers: headers,
+				Body:    string(body),
+			}
+			cachedRespData, err := json.Marshal(cachedResp)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+
 			// Store response in Redis cache
-			err = rdb.Set(ctx, cacheKey, body, 10*time.Minute).Err()
+			err = rdb.Set(ctx, cacheKey, cachedRespData, 10*time.Minute).Err()
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 				return
@@ -85,7 +109,7 @@ func main() {
 
 			// Copy headers from the response
 			for k, v := range resp.Header {
-				c.Writer.Header()[k] = v
+				c.Writer.Header().Add(k, strings.Join(v, ","))
 			}
 
 			c.Status(resp.StatusCode)
@@ -96,8 +120,20 @@ func main() {
 		} else {
 			fmt.Println("HIT:", targetURL)
 			// Cache hit, return cached response
-			c.Writer.Header().Set("Content-Type", "application/json")
-			c.String(http.StatusOK, cachedResponse)
+			var cachedResp CachedResponse
+			err = json.Unmarshal([]byte(cachedResponse), &cachedResp)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+
+			// Copy headers from the cached response
+			for k, v := range cachedResp.Headers {
+				c.Writer.Header().Add(k, v)
+			}
+
+			c.Status(http.StatusOK)
+			c.Writer.Write([]byte(cachedResp.Body))
 		}
 	})
 

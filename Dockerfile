@@ -1,5 +1,7 @@
 # Use the official Golang image as a build stage
-FROM golang:1.22.2-alpine AS builder
+#FROM golang:1.22.2 AS builder
+#FROM arm64v8/golang:1.22.2 AS builder
+FROM amd64/golang:1.22.2-alpine AS builder
 
 LABEL org.opencontainers.image.source https://github.com/dangnghia1997/go-gin-woocommerce-proxy
 

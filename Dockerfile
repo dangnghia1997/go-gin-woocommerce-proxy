@@ -1,6 +1,8 @@
 # Use the official Golang image as a build stage
 FROM golang:1.22.2-alpine AS builder
 
+LABEL org.opencontainers.image.source https://github.com/dangnghia1997/go-gin-woocommerce-proxy
+
 # Set the Current Working Directory inside the container
 WORKDIR /app
 

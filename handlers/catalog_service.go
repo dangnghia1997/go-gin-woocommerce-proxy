@@ -16,17 +16,17 @@ import (
 )
 
 var (
-	WooCommerceAPIURL = os.Getenv("WOOCOMMERCE_API_URL")
-	ConsumerKey       = os.Getenv("WOOCOMMERCE_CONSUMER_KEY")
-	ConsumerSecret    = os.Getenv("WOOCOMMERCE_CONSUMER_SECRET")
+	ConsumerKey    = os.Getenv("WOOCOMMERCE_CONSUMER_KEY")
+	ConsumerSecret = os.Getenv("WOOCOMMERCE_CONSUMER_SECRET")
 )
 
-func ProxyWoocomerce(rdb *redis.Client) func(*gin.Context) {
+// jsonPath = /wc/v3
+func ProxyWoocomerce(rdb *redis.Client, jsonPath string) func(*gin.Context) {
 	return func(c *gin.Context) {
 		ctx := context.Background()
 		proxyPath := c.Param("proxyPath")
 		queryString := c.Request.URL.RawQuery
-		targetURL := WooCommerceAPIURL + proxyPath
+		targetURL := WpApiUrl + jsonPath + proxyPath
 
 		// Append query string if present
 		if queryString != "" {

@@ -22,8 +22,9 @@ func main() {
 
 	r := gin.Default()
 
-	r.Any("/catalog-service/*proxyPath", handlers.ProxyWoocomerce(rdb))
-	r.Any("/cms-service/*proxyPath", handlers.ProxyCms(rdb))
+	r.Any("/catalog-service/*proxyPath", handlers.ProxyWoocomerce(rdb, "/wc/v3"))
+	r.Any("/cms-service/*proxyPath", handlers.ProxyCms(rdb, "/wp/v2"))
+	r.Any("/page-config/*proxyPath", handlers.ProxyCms(rdb, "/sc/v1"))
 
 	r.Run(":8080") // Run the server on port 8080
 }

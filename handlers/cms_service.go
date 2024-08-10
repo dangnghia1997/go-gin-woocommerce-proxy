@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -15,13 +16,16 @@ import (
 )
 
 var WpApiUrl = os.Getenv("WP_API_URL")
+var WpAppUserName = os.Getenv("WP_APP_USERNAME")
+var WpAppPasword = os.Getenv("WP_APP_PASSWORD")
 
-func ProxyCms(rdb *redis.Client) func(*gin.Context) {
+// jsonPath = "/wp/v2"
+func ProxyCms(rdb *redis.Client, jsonPath string) func(*gin.Context) {
 	return func(c *gin.Context) {
 		ctx := context.Background()
 		proxyPath := c.Param("proxyPath")
 		queryString := c.Request.URL.RawQuery
-		targetURL := WpApiUrl + proxyPath
+		targetURL := WpApiUrl + jsonPath + proxyPath
 
 		// Append query string if present
 		if queryString != "" {
@@ -40,6 +44,9 @@ func ProxyCms(rdb *redis.Client) func(*gin.Context) {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 				return
 			}
+			// Add WooCommerce authentication
+			auth := base64.StdEncoding.EncodeToString([]byte(WpAppUserName + ":" + WpAppPasword))
+			req.Header.Add("Authorization", "Basic "+auth)
 
 			// Copy headers from the incoming request
 			for k, v := range c.Request.Header {
